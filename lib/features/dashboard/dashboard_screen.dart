@@ -4,7 +4,9 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/providers/categoria_provider.dart';
 import '../../core/providers/despesa_provider.dart';
+import '../../core/providers/tema_provider.dart'; // ← ADICIONADO: import do TemaProvider
 import '../../data/models/despesa.dart';
+import 'graficos_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -43,6 +45,51 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return Scaffold(
       backgroundColor: scheme.surface,
+      appBar: AppBar(
+        backgroundColor: scheme.surface,
+        elevation: 0,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Olá! 👋',
+                style: Theme.of(context).textTheme.titleSmall),
+            Text('Controle de Gastos',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleLarge
+                    ?.copyWith(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        actions: [
+          // ← ADICIONADO: botão de alternar tema claro/escuro
+          Consumer<TemaProvider>(
+            builder: (context, temaProvider, _) => IconButton(
+              icon: Icon(
+                temaProvider.temaEscuro
+                    ? Icons.light_mode
+                    : Icons.dark_mode,
+              ),
+              tooltip: 'Alternar tema',
+              onPressed: temaProvider.alternar,
+            ),
+          ),
+          // ← FIM DA ADIÇÃO
+          IconButton(
+            icon: const Icon(Icons.bar_chart),
+            tooltip: 'Ver gráficos',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (_) => const GraficosScreen()),
+            ),
+          ),
+          CircleAvatar(
+            backgroundColor: scheme.primaryContainer,
+            child: Icon(Icons.person, color: scheme.primary),
+          ),
+          const SizedBox(width: 16),
+        ],
+      ),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
@@ -52,30 +99,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              // ── Cabeçalho ──────────────────────────────
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Olá! 👋',
-                          style: Theme.of(context).textTheme.titleMedium),
-                      Text('Controle de Gastos',
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineSmall
-                              ?.copyWith(fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                  CircleAvatar(
-                    backgroundColor: scheme.primaryContainer,
-                    child: Icon(Icons.person, color: scheme.primary),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-
               // ── Filtro de período ───────────────────────
               Row(
                 children: ['semana', 'mês', 'ano'].map((periodo) {
@@ -126,16 +149,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     const SizedBox(height: 16),
                     Row(
                       children: [
-                        _infoChip(context,
-                            Icons.receipt_long, '${despesas.length} despesas'),
+                        _infoChip(context, Icons.receipt_long,
+                            '${despesas.length} despesas'),
                         const SizedBox(width: 12),
-                        _infoChip(context, Icons.calendar_today,
+                        _infoChip(
+                            context,
+                            Icons.calendar_today,
                             _filtroPeriodo[0].toUpperCase() +
                                 _filtroPeriodo.substring(1)),
                       ],
                     ),
                   ],
                 ),
+              ),
+              const SizedBox(height: 24),
+
+              // ── Botão atalho gráficos ───────────────────
+              OutlinedButton.icon(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const GraficosScreen()),
+                ),
+                icon: const Icon(Icons.bar_chart),
+                label: const Text('Ver relatórios e gráficos'),
               ),
               const SizedBox(height: 24),
 
@@ -237,8 +274,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // ── Helpers ──────────────────────────────────────────
-
   Widget _infoChip(BuildContext context, IconData icon, String label) {
     final scheme = Theme.of(context).colorScheme;
     return Container(
@@ -295,9 +330,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final porcentagem = total > 0 ? (entry.value / total) * 100 : 0.0;
       return PieChartSectionData(
         value: entry.value,
-        color: categoria != null
-            ? Color(categoria.cor)
-            : Colors.grey,
+        color: categoria != null ? Color(categoria.cor) : Colors.grey,
         title: '${porcentagem.toStringAsFixed(0)}%',
         radius: 50,
         titleStyle: const TextStyle(
